@@ -1,0 +1,14 @@
+<div class="container">
+    <div class="row first-row">
+        <div class="col-12 col-md-6 offset-md-2">
+        <form (submit)="searchTag($event)">
+            <div class="form-group">
+                <label for = "hashtag">Enter the Hashtag</label>
+                <input class="form-control" id = 'hashtag' [(ngModel)]= 'hashtag' name = 'hashtag' required />
+            </div>
+            <button class="btn btn-primary">Search</button>
+        </form>
+    </div>
+
+    </div>
+</div>
