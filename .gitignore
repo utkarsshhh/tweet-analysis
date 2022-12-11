@@ -1,8 +1,10 @@
 model.pkl
 
+tokens.txt
+
 twitter-analysis/node_modules
 
-tokens.txt
+
 json_analysis.py
 sample.json
 tweets.csv
