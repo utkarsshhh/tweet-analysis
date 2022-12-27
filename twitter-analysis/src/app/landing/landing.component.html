@@ -1,14 +1,33 @@
 <div class="container">
     <div class="row first-row">
         <div class="col-12 col-md-6 offset-md-2">
-        <form (submit)="searchTag($event)">
-            <div class="form-group">
-                <label for = "hashtag">Enter the Hashtag</label>
-                <input class="form-control" id = 'hashtag' [(ngModel)]= 'hashtag' name = 'hashtag' required />
-            </div>
-            <button class="btn btn-primary">Search</button>
-        </form>
-    </div>
+            <form (submit)="searchTag($event)">
+                <div class="form-group">
+                    <label for="hashtag">Enter the Hashtag</label>
+                    <input class="form-control" id='hashtag' [(ngModel)]='hashtag' name='hashtag' required />
+                </div>
+                <button class="btn btn-primary">Search</button>
+            </form>
+        </div>
 
+    </div>
+</div>
+<br><br>
+<div *ngIf="isSearched" class="row">
+    <div class="col-12 col-md-5 offset-md-1">
+        <app-chart [label]="labels" [data]="counts"></app-chart>
+    </div>
+    <div class="col-12 col-md-4 offset-md-2 sentiments">
+        <h1 class="sentiment">Overall Sentiment</h1>
+        <h2 class="mint">{{sentiment}}</h2>
+    </div>
+</div>
+<br><br>
+<div *ngIf="isSearched" class="row">
+    <div class="col-12 col-md-5 offset-md-1">
+        <app-piechart [pieLabel]="pieLabels" [pieData]="pieCounts"></app-piechart>
+    </div>
+    <div class="col-12 col-md-4 offset-md-1">
+        <app-linechart [label]="sentimentLabels" [data]="sentiments"></app-linechart>
     </div>
 </div>

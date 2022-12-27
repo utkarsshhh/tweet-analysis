@@ -1,3 +1,15 @@
 .first-row{
     padding-top: 2rem;
 }
+.mint{
+    color:dodgerblue;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-style: inherit;
+    font-weight: bold;
+}
+.sentiment{
+    font-family: Arial, Helvetica, sans-serif;
+}
+.sentiments{
+    padding-top: 3rem;
+}
