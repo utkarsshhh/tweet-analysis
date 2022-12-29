@@ -1,7 +1,7 @@
+# Importing the libraries
 from flask import Flask, request
 from flask_cors import CORS
 import requests
-import json
 import pandas as pd
 import numpy as np
 import pickle
@@ -15,6 +15,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from langdetect import detect
 
+# Defining the Flask app
 
 app = Flask(__name__)
 CORS(app)
@@ -59,17 +60,40 @@ def string_to_time(string):
 
 
 def seperate_count(tweets):
-    # tweets = pd.read_csv("tweets.csv")
+    '''
+
+        This function is used to fetch the date from datetime object and group the data
+        according to the date
+
+        Input:
+        tweets: a dataframe containing the tweets and their timestamp and other metadata
+
+        Output:
+        returns a dictionary with the count of records for each date
+
+        '''
+
     tweets['created_at'] = tweets['created_at'].apply(string_to_time)
     tweets['date'] = tweets['created_at'].apply(lambda x: str(x.date()))
-    print(tweets['date'])
     grouped_tweets = tweets.groupby(by='date').count()
     labels = np.array(grouped_tweets.index)
     counts = np.array(grouped_tweets['id'])
     return {'labels':labels.tolist(),'counts':counts.tolist()}
 
 def get_sentiment(tweets):
-    # tweets = pd.read_csv("tweets.csv")
+    '''
+
+        This function finds the average sentiment of the tweets and returns it in
+        the form of a string
+
+        Input:
+        tweets: a dataframe containing the tweets and their sentiment
+
+        Output:
+        sentiment: a string which is the overall sentiment of the topic
+
+    '''
+
     tweet_sentiments = tweets['sentiment'].value_counts()
     try:
         positive_counts = tweet_sentiments.loc[1.0]
@@ -83,8 +107,8 @@ def get_sentiment(tweets):
         neutral_counts = tweet_sentiments.loc[0.0]
     except:
         neutral_counts = 0
-    print(positive_counts, "   ", neutral_counts, "   ", negative_counts)
-    print(tweets['sentiment'].mean())
+
+
     if (positive_counts + negative_counts < neutral_counts):
         avg_sentiment = tweets.loc[tweets['sentiment'] != 0.0]['sentiment'].mean()
         if (avg_sentiment > 0.6):
@@ -104,7 +128,18 @@ def get_sentiment(tweets):
     return(sentiment)
 
 def sentiment_distribution(tweets):
-    # tweets = pd.read_csv("tweets.csv")
+    '''
+
+        This function idetifies the lables and counts of each label(sentiment) for visualisation
+
+        Input:
+        tweets: a dataframe containing the tweets and their sentiment
+
+        Output:
+        returns a dictionary with the count of records for each sentiment
+
+    '''
+
     grouped_tweets = tweets.groupby(by='sentiment').count()
     labels = np.array(grouped_tweets.index)
     counts = np.array(grouped_tweets['id'])
@@ -112,7 +147,19 @@ def sentiment_distribution(tweets):
 
 
 def seperate_sentiments(tweets):
-    # tweets = pd.read_csv("tweets.csv")
+    '''
+
+        This function is used to calculate the average sentiment for each date and group the data
+        according to the date
+
+        Input:
+        tweets: a dataframe containing the tweets and their timestamp and other metadata
+
+        Output:
+        returns a dictionary with the average sentiment of tweets for each date
+
+    '''
+
     tweets['date'] = tweets['created_at'].apply(lambda x: str(x.date()))
     grouped_tweets = tweets.loc[tweets['sentiment'] != 0.0][['date', 'sentiment']].groupby(by="date").mean()
     sentiment_labels = np.array(grouped_tweets.index)
@@ -120,6 +167,18 @@ def seperate_sentiments(tweets):
     return {'sentimentLabels':sentiment_labels.tolist(),'sentiments':sentiments.tolist()}
 
 def detect_language(text):
+    '''
+
+        This function detects the language of the tweet using langdetect
+
+        Input:
+        text: the string for which the language is to be detected
+
+        Output:
+        lang: returns the language as a string for the text input
+
+    '''
+
     try:
         lang = detect(text)
     except:
@@ -157,61 +216,47 @@ def tweet_cleaner(text):
 
 @app.route('/get_tweets',methods = ['POST'])
 def get_tweet():
-    hastag = request.get_json()
+    # Fetching the token Bearer token for authentication of API
+    hashtag = request.get_json()
     token_object = open("tokens.txt","r")
     access_token = token_object.readline()
     token_object.close()
-    print ("before query")
-    further_pages = True
-    today = date.today()
 
-    # week_start = today - timedelta(days=6)
-    # time_now = datetime.now() - timedelta(hours=1)
-    # time_string = str(time_now.time()).split(".")[0]
-    # end_date = str(today) + "T"+time_string+"Z"
-    # print(datetime.now())
-    # print (end_date)
-    # start_date = str(week_start) + "T00:00:00Z"
+    # Defining the process for fetching tweets for a whole week.
+    further_pages = True
     today = datetime.now(timezone.utc)
     week_start = today - timedelta(days=6)
     time_now = today - timedelta(seconds=20)
     time_string = str(time_now.time()).split(".")[0]
     end_date = str(today.date()) + "T" + time_string + "Z"
     start_date = str(week_start.date()) + "T00:00:00Z"
-    query1 = "https://api.twitter.com/2/tweets/search/recent?query=%23"+hastag['hashtag']+"&tweet.fields=created_at&max_results=100&expansions=author_id&user.fields=created_at&start_time="+start_date+"&end_time="+end_date
+    query1 = "https://api.twitter.com/2/tweets/search/recent?query=%23"+hashtag['hashtag']+"&tweet.fields=created_at&max_results=100&expansions=author_id&user.fields=created_at&start_time="+start_date+"&end_time="+end_date # The Twitter API query
     x = requests.get(query1, headers={"Authorization": "Bearer " + access_token})
-    print (x.json())
     tweets = pd.DataFrame(x.json()['data'])
-    count_num = 1
+    # Making API request repeatedly to fetch all tweets from paginated results of the API call
     while (further_pages):
         try:
             next_token = x.json()['meta']['next_token']
-            print ("count  ",count_num)
-            print (next_token)
-            count_num += 1
-            query2 = "https://api.twitter.com/2/tweets/search/recent?query=%23" + hastag['hashtag'] + "&tweet.fields=created_at&max_results=100&expansions=author_id&user.fields=created_at&start_time="+start_date+"&end_time="+end_date+"&pagination_token="+next_token
+            query2 = "https://api.twitter.com/2/tweets/search/recent?query=%23" + hashtag['hashtag'] + "&tweet.fields=created_at&max_results=100&expansions=author_id&user.fields=created_at&start_time="+start_date+"&end_time="+end_date+"&pagination_token="+next_token
             x = requests.get(query2, headers={"Authorization": "Bearer " + access_token})
-            print (x)
             page_tweets = pd.DataFrame(x.json()['data'])
             df_array = [tweets,page_tweets]
             tweets = pd.concat(df_array)
         except:
             further_pages = False
 
-    # print (x.json()['meta']['next_token'])
-    # tweets = pd.DataFrame(x.json()['data'])
-    print (tweets.columns)
-    print (tweets['text'].isnull().sum())
+
+    # Cleaning the text tweet to make it usable for the model
     tweets['text'] = tweets['text'].apply(tweet_cleaner)
     tweets['language'] = tweets['text'].apply(lambda x: detect_language(x))
     tweets = tweets.loc[tweets['language'] == "en"]
     f = open("model.pkl", 'rb')
     predict_model = pickle.load(f)
-    tweets['text'] = tweets['text'].apply(tweet_cleaner)
+
+    #Predicting the sentiment of the tweets using the pickle model
     sentiments = predict_model.predict(tweets['text'])
     tweets['sentiment'] = sentiments
-    # print(tweets['sentiment'].value_counts())
-    tweets.to_csv("tweets.csv")
+    #Organising data and predictions for visualisation in the web application
     tweet_analysis = seperate_count(tweets)
     tweet_analysis['sentiment'] = get_sentiment(tweets)
     pie_chart_distribution = sentiment_distribution(tweets)
